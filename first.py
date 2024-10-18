@@ -4,40 +4,38 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes, CommandHandler
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
+
 load_dotenv()
 
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-api_key= os.getenv('GOOGLE_API_KEY')
+api_key = os.getenv('GOOGLE_API_KEY')
 MODEL_NAME = 'gemini-1.5-pro' 
 
 async def run_chat(user_input):
     generation_config = {
-    "temperature": 0.5,  
-    "top_p": 0.7,       
-    "top_k": 50,         
-    "max_output_tokens": 250,  
-    "response_mime_type": "text/plain",
-}
-
+        "temperature": 0.5,
+        "top_p": 0.7,
+        "top_k": 50,
+        "max_output_tokens": 250,
+        "response_mime_type": "text/plain",
+    }
 
     model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    generation_config=generation_config,
-    safety_settings = [
-        {
-            "category": HarmCategory.HARM_CATEGORY_HARASSMENT,
-            "threshold": HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-    ]
+        model_name="gemini-1.5-flash",
+        generation_config=generation_config,
+        safety_settings=[
+            {
+                "category": HarmCategory.HARM_CATEGORY_HARASSMENT,
+                "threshold": HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            },
+        ]
     )
+    
     try:
         chat = model.start_chat(
-        history=[
-        {
-         "role": "user",
-         "parts": [
-          """
-               Hello! I'm Sam, Abhishek's friendly assistant. Here's a quick overview of Abhishek's profile:
+            history=[{
+                "role": "user",
+                "parts": [""" Hello! I'm Sam, Abhishek's friendly assistant. Here's a quick overview of Abhishek's profile:
 
     **Education:**
     Final-year B.Tech student in Computer Engineering at IET, Lucknow, with a strong foundation in competitive programming and development.
@@ -45,31 +43,19 @@ async def run_chat(user_input):
     **Technical Skills:**
     Proficient in C++, JavaScript, SQL, HTML, CSS, and experienced with the MERN stack (MongoDB, Express.js, React.js, Node.js).
 
-    --- **Key Projects:** ----
+    **Key Projects:**
 
     **To-Do List App:**
     Developed a full-stack task management app with a user-friendly interface, allowing users to register, manage, and delete tasks. Backend APIs are powered by Express.js, with MongoDB handling data storage. This project showcases efficient data interaction and seamless task management.
 
     **Social Media Website (Instagram Clone):**
     Built using the MERN stack, this project includes real-time chat via Socket.io, image and video posts, comments, and likes. Secure authentication with JWT and Bcrypt, dynamic following systems, and admin group management demonstrate Abhishek's full-stack development skills. 
-    
     [GitHub Repository](https://github.com/AbhishekChetiya)
 
     **Telegram Bot:**
     Personalized bot using Gemini AI, offering an engaging virtual introduction to Abhishek's skills and achievements. It provides real-time answers to user queries, reflecting his commitment to enhancing user interaction with innovative solutions.
-    
-    **Calculator** 
-    Developed a user-friendly calculator using HTML, CSS, and JavaScript to perform basic mathematical operations. The application features a responsive design with a visually appealing interface, allowing users to easily input values and view results in real time. This project showcases my skills in front-end development and dynamic functionality.
 
-    **Sudoko** 
-    Developed a Sudoku solver that efficiently solves puzzles using recursion and backtracking techniques. The application validates input data to ensure solvability, providing accurate solutions when valid puzzles are entered. Built with HTML, CSS, and JavaScript for a user-friendly interface and seamless interaction.
-
-    **Casion** 
-    A card game where players draw from a deck of thirteen cards to reach a winning value of 21. Players can continue drawing cards until their total exceeds 21, resulting in a loss. Each loss deducts money, and sound effects enhance the gaming experience, signaling wins and losses.
-
-    Also Developed the portpolio website
-
-    ---**Competitive Programming Achievements:**---
+    **Competitive Programming Achievements:**
 
     **Codeforces:**
     Expert (Highest Rating: 1633), Global Rank 869 in Educational Codeforces Round 163 (Div. 2), Global Rank 641 in Codeforces Round 962 (Div. 3).
@@ -92,22 +78,13 @@ async def run_chat(user_input):
 
     **GitHub:**
     [https://github.com/AbhishekChetiya]
-    
 
-    To Connect Abhishek:- 
-    Linkedin :- https://www.linkedin.com/in/abhishek-pandey-0b41a9229/
-    Instagram : https://www.instagram.com/aabbhishek_pandey
-    Email :- a1.bhishek.p1.pandey@gmail.com
     Things To Notice:-
     Give Answer that only related to the abhishek only
     Does not Give any sexual and adult answer
     You use the given links to search any things other then that you conn't use 
-    search you can say to users make the google search
-           """,
-          ],
-        },
-
-        ]
+    search you can say to users make the google search"""]
+            }]
         )
         result = chat.send_message(user_input)
         return result.text
@@ -115,10 +92,9 @@ async def run_chat(user_input):
         print(f"Error in run_chat: {e}")
         return "An error occurred while processing your request. Please try again."
 
-# Function to generate a response based on the user query
 async def perform_chat(user_message: str) -> str:
     try:
-        response = await run_chat(user_message) 
+        response = await run_chat(user_message)
         return response if response else "I'm sorry, I didn't understand that."
     except Exception as e:
         print(f"Error in perform_chat: {e}")
@@ -127,7 +103,7 @@ async def perform_chat(user_message: str) -> str:
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         user_message = update.message.text
-        result = await perform_chat(user_message)  # Get the model's response
+        result = await perform_chat(user_message)
         await update.message.reply_text(result)
     except Exception as e:
         print(f"Error in handle_message: {e}")
@@ -146,9 +122,12 @@ if __name__ == '__main__':
         if TELEGRAM_TOKEN is None:
             print("Error: TELEGRAM_TOKEN is not set. Please check your .env file.")
         else:
+            # Ensure only one instance of the bot runs and clear any pending updates
             application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
             application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
             application.add_handler(CommandHandler('start', start))  # Add a start command handler
-            application.run_polling()
+
+            # Run polling with drop_pending_updates to prevent conflicts
+            application.run_polling(drop_pending_updates=True)
     except Exception as e:
         print(f"Error in bot setup: {e}")
